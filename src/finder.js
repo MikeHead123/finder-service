@@ -4,7 +4,6 @@ const web3 = require('web3');
 class Finder {
     constructor () {
         this.blockIds = [];
-        this.responseData = [];
         this.balances = new Map();
         this.apiKey = process.env.APIKEY || '';
     }
@@ -13,7 +12,6 @@ class Finder {
         const lastBlock = await this.getLastBlock();
         this.createArrayOfBlockIds(lastBlock);
         await this.startProccessingBlocks();
-        await this.saveBalanceToMap();
         return this.findTheBiggestChangeAddressBalance();
     }
 
@@ -38,20 +36,19 @@ class Finder {
     }
 
     async startProccessingBlocks() {
-        const concurrentPromises = []; 
+        const concurrentPromises = [];
         for (let id of this.blockIds) {
             concurrentPromises.push(this.createRequest(id));
-            if (concurrentPromises.length === 4) {
-                    const responses = await Promise.all(concurrentPromises)
-                    const data = responses.map(response => response.data.result)
-                    this.responseData.push(...data)
+            if (concurrentPromises.length === 5) {
+                    const responses = await Promise.all(concurrentPromises);
+                    this.saveBalanceToMap(responses.map(response => response.data.result));
                     concurrentPromises.length = 0;
             }
         }
     }
 
-    saveBalanceToMap() {
-        this.responseData.map((curr) => {
+    saveBalanceToMap(data) {
+        data.map((curr) => {
             if (curr.transactions && curr.transactions.length > 0) {
                 curr.transactions.map((transaction) => {
                     if (this.balances.has(transaction.to)) {
@@ -83,8 +80,6 @@ class Finder {
                 address = key;
             }
         });
-        console.log(`address ${address}`);
-        console.log(`theBiggestChange ${theBiggestChange}`);
         return address;
     }
 }
