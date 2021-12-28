@@ -52,22 +52,24 @@ class Finder {
 
     saveBalanceToMap() {
         this.responseData.map((curr) => {
-            curr.transactions.map((transaction) => {
-                if (this.balances.has(transaction.to)) {
-                    const curValue = this.balances.get(transaction.to);
-                    const valueFromTransaction = web3.utils.toBN(transaction.value);
-                    this.balances.set(transaction.to, curValue.add(valueFromTransaction));
-                } else {
-                    this.balances.set(transaction.to, web3.utils.toBN(transaction.value));
-                }
-                if (this.balances.has(transaction.from)) {
-                    const curValue = this.balances.get(transaction.from);
-                    const valueFromTransaction = web3.utils.toBN(transaction.value);
-                    this.balances.set(transaction.from, curValue.sub(valueFromTransaction));
-                } else {
-                    this.balances.set(transaction.from, web3.utils.toBN(transaction.value));
-                }
-            })
+            if (curr.transactions && curr.transactions.length > 0) {
+                curr.transactions.map((transaction) => {
+                    if (this.balances.has(transaction.to)) {
+                        const curValue = this.balances.get(transaction.to);
+                        const valueFromTransaction = web3.utils.toBN(transaction.value);
+                        this.balances.set(transaction.to, curValue.add(valueFromTransaction));
+                    } else {
+                        this.balances.set(transaction.to, web3.utils.toBN(transaction.value));
+                    }
+                    if (this.balances.has(transaction.from)) {
+                        const curValue = this.balances.get(transaction.from);
+                        const valueFromTransaction = web3.utils.toBN(transaction.value);
+                        this.balances.set(transaction.from, curValue.sub(valueFromTransaction));
+                    } else {
+                        this.balances.set(transaction.from, web3.utils.toBN(-1).mul(web3.utils.toBN(transaction.value)));
+                    }
+                })
+            }
         })
     }
 
@@ -75,8 +77,7 @@ class Finder {
         let theBiggestChange = 0;
         let address;
         this.balances.forEach((value, key) => {
-            const balanceBN = web3.utils.toBN(value);
-            const balanceNumber = web3.utils.fromWei(balanceBN);
+            const balanceNumber = web3.utils.fromWei(value);
             if (theBiggestChange < balanceNumber * -1) {
                 theBiggestChange = balanceNumber * -1;
                 address = key;
